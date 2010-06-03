@@ -6,6 +6,7 @@ module Capybara
 
     class << self
       def escape(string)
+        string = string.to_s
         if string.include?("'")
           string = string.split("'", -1).map do |substr|
             "'#{substr}'"
