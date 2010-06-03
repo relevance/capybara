@@ -29,6 +29,12 @@ describe Capybara::XPath do
     end
   end
   
+  describe ".escape" do
+    it "doesn't blow up when given a non-string value" do
+      lambda { Capybara::XPath.escape(15) }.should_not raise_error
+    end
+  end
+
   describe '#append' do
     it "should append an XPath's paths" do
       @xpath = Capybara::XPath.wrap('//test')
