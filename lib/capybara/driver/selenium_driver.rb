@@ -25,13 +25,13 @@ class Capybara::Driver::Selenium < Capybara::Driver::Base
     end
 
     def set(value)
-      if tag_name == 'textarea' or (tag_name == 'input' and %w(text password hidden file).include?(type))
-        node.clear
-        node.send_keys(value.to_s)
-      elsif tag_name == 'input' and type == 'radio'
+      if tag_name == 'input' and type == 'radio'
         node.click
       elsif tag_name == 'input' and type == 'checkbox'
         node.click if node.attribute('checked') != value
+      elsif tag_name == 'textarea' or tag_name == 'input'
+        node.clear
+        node.send_keys(value.to_s)
       end
     end
 
@@ -73,9 +73,6 @@ class Capybara::Driver::Selenium < Capybara::Driver::Base
       node.displayed? and node.displayed? != "false"
     end
     
-    def trigger(event)
-    end
-
   private
 
     def all_unfiltered(locator)
@@ -127,6 +124,10 @@ class Capybara::Driver::Selenium < Capybara::Driver::Base
   end
 
   def wait?; true; end
+
+  def execute_script(script)
+    browser.execute_script script
+  end
 
   def evaluate_script(script)
     browser.execute_script "return #{script}"

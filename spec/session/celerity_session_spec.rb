@@ -7,7 +7,7 @@ if RUBY_PLATFORM =~ /java/
     end
 
     describe '#driver' do
-      it "should be a rack test driver" do
+      it "should be a celerity driver" do
         @session.driver.should be_an_instance_of(Capybara::Driver::Celerity)
       end
     end
@@ -21,6 +21,7 @@ if RUBY_PLATFORM =~ /java/
     it_should_behave_like "session"
     it_should_behave_like "session with javascript support"
     it_should_behave_like "session with headers support"
+    it_should_behave_like "session with status code support"
   end
 else
   puts "#{File.basename(__FILE__)} requires JRuby; skipping.."

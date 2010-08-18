@@ -12,7 +12,7 @@ module Capybara
       :has_no_content?, :has_no_css?, :has_no_xpath?, :has_xpath?, :locate, :save_and_open_page, :select, :source, :uncheck,
       :visit, :wait_until, :within, :within_fieldset, :within_table, :within_frame, :has_link?, :has_no_link?, :has_button?,
       :has_no_button?,    :has_field?, :has_no_field?, :has_checked_field?, :has_unchecked_field?, :has_no_table?, :has_table?,
-      :unselect, :has_select?, :has_no_select?
+      :unselect, :has_select?, :has_no_select?, :current_path, :scope_to
     ]
 
     attr_reader :mode, :app
@@ -34,7 +34,9 @@ module Capybara
 
     def_delegator :driver, :cleanup!
     def_delegator :driver, :current_url
+    def_delegator :driver, :current_path
     def_delegator :driver, :response_headers
+    def_delegator :driver, :status_code
     def_delegator :driver, :visit
     def_delegator :driver, :body
     def_delegator :driver, :source
@@ -124,6 +126,14 @@ module Capybara
       driver.within_frame(frame_id) do
         yield
       end
+    end
+
+    def scope_to(*locator)
+      scoped_session = self.clone
+      scoped_session.instance_eval do
+        @scopes = scopes + locator
+      end
+      scoped_session
     end
 
     def has_xpath?(path, options={})
@@ -227,12 +237,16 @@ module Capybara
     def locate(kind_or_locator, locator=nil, fail_msg = nil)
       node = wait_conditionally_until { find(kind_or_locator, locator) }
     ensure
-      raise Capybara::ElementNotFound, fail_msg || "Unable to locate '#{kind_or_locator}'" unless node
+      raise Capybara::ElementNotFound, fail_msg || "Unable to locate '#{locator || kind_or_locator}'" unless node
       return node
     end
 
     def wait_until(timeout = Capybara.default_wait_time)
       WaitUntil.timeout(timeout,driver) { yield }
+    end
+
+    def execute_script(script)
+      driver.execute_script(script)
     end
 
     def evaluate_script(script)

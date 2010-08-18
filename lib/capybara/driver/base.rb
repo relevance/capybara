@@ -3,12 +3,20 @@ class Capybara::Driver::Base
     raise NotImplementedError
   end
 
+  def current_path
+    URI.parse(current_url).path
+  end
+
   def visit(path)
     raise NotImplementedError
   end
 
   def find(query)
     raise NotImplementedError
+  end
+
+  def execute_script(script)
+    raise Capybara::NotSupportedByDriverError
   end
 
   def evaluate_script(script)
@@ -23,6 +31,10 @@ class Capybara::Driver::Base
   end
 
   def response_headers
+    raise Capybara::NotSupportedByDriverError
+  end
+  
+  def status_code
     raise Capybara::NotSupportedByDriverError
   end
 

@@ -1,6 +1,6 @@
 require 'capybara/spec/test_app'
 
-Dir[File.dirname(__FILE__)+'/driver/*'].each { |group| 
+Dir[File.dirname(__FILE__)+'/driver/*'].each { |group|
   require group
 }
 
@@ -13,10 +13,15 @@ shared_examples_for 'driver' do
       @driver.visit('/foo')
       @driver.body.should include('Another World')
     end
-    
+
     it "should show the correct URL" do
       @driver.visit('/foo')
       @driver.current_url.should include('/foo')
+    end
+
+    it 'should show the correct location' do
+      @driver.visit('/foo')
+      @driver.current_path.should == '/foo'
     end
   end
 
@@ -55,6 +60,10 @@ shared_examples_for 'driver' do
         @driver.find('//input[@id="checked_field"]')[0][:checked].should be_true
       end
 
+      it "should allow retrieval of the value" do
+        @driver.find('//textarea').first.value.should == 'banana'
+      end
+
       it "should allow assignment of field value" do
         @driver.find('//input').first.value.should == 'monkey'
         @driver.find('//input').first.set('gorilla')
@@ -66,10 +75,10 @@ shared_examples_for 'driver' do
         @driver.find('//a')[1].tag_name.should == 'a'
         @driver.find('//p')[1].tag_name.should == 'p'
       end
-      
+
       it "should extract node visibility" do
         @driver.find('//a')[0].should be_visible
-        
+
         @driver.find('//div[@id="hidden"]')[0].should_not be_visible
         @driver.find('//div[@id="hidden_via_ancestor"]')[0].should_not be_visible
       end
@@ -81,7 +90,7 @@ shared_examples_for 'driver' do
       @driver.visit('/tables')
       @node = @driver.find('//body').first
     end
-  
+
     it "should be able to navigate/search child node" do
       @node.all('//table').size.should == 5
       @node.find('//form').all('.//table').size.should == 1
@@ -95,7 +104,6 @@ shared_examples_for 'driver' do
       end
     end
   end
-
 end
 
 shared_examples_for "driver with javascript support" do
@@ -130,6 +138,22 @@ shared_examples_for "driver with header support" do
   end
 end
 
+shared_examples_for "driver with status code support" do
+  it "should make the status code available through status_code" do
+    @driver.visit('/with_simple_html')
+    @driver.status_code.should == 200
+  end
+end
+
+shared_examples_for "driver without status code support" do
+  it "should raise when trying to access the status code available through status_code" do
+    @driver.visit('/with_simple_html')
+    lambda {
+      @driver.status_code
+    }.should raise_error(Capybara::NotSupportedByDriverError)
+  end
+end
+
 shared_examples_for "driver with frame support" do
   describe '#within_frame' do
     before(:each) do
@@ -158,5 +182,37 @@ shared_examples_for "driver with frame support" do
       end
       @driver.find("//*[@id='divInMainWindow']")[0].text.should eql 'This is the text for divInMainWindow'
     end
+  end
+end
+
+shared_examples_for "driver with cookies support" do
+  describe "#cleanup" do
+    it "should set and clean cookies" do
+      @driver.visit('/get_cookie')
+      @driver.body.should_not include('test_cookie')
+
+      @driver.visit('/set_cookie')
+      @driver.body.should include('Cookie set to test_cookie')
+
+      @driver.visit('/get_cookie')
+      @driver.body.should include('test_cookie')
+
+      @driver.cleanup!
+      @driver.visit('/get_cookie')
+      @driver.body.should_not include('test_cookie')
+    end
+  end
+end
+
+shared_examples_for "driver with infinite redirect detection" do
+  it "should follow 5 redirects" do
+    @driver.visit('/redirect/5/times')
+    @driver.body.should include('redirection complete')
+  end
+
+  it "should not follow more than 5 redirects" do
+    running do
+      @driver.visit('/redirect/6/times')
+    end.should raise_error(Capybara::InfiniteRedirectError)
   end
 end

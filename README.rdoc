@@ -8,7 +8,8 @@ Capybara aims to simplify the process of integration testing Rack applications,
 such as Rails, Sinatra or Merb. It is inspired by and aims to replace Webrat as
 a DSL for interacting with a webapplication. It is agnostic about the driver
 running your tests and currently comes bundled with rack-test, Culerity,
-Celerity and Selenium support built in.
+Celerity and Selenium support built in. env.js support is available as the
+{capybara-envjs gem}[http://github.com/smparkes/capybara-envjs].
 
 == Install:
 
@@ -123,6 +124,16 @@ being.
 Install celerity as noted above, make sure JRuby is in your path. Note that
 Culerity doesn't seem to be working under Ruby 1.9 at the moment.
 
+== env.js
+
+The {capybara-envjs driver}[http://github.com/smparkes/capybara-envjs]
+uses the envjs gem ({GitHub}[http://github.com/smparkes/env-js],
+{rubygems.org}[http://rubygems.org/gems/envjs]) to interpret
+JavaScript outside the browser. The driver is installed by installing the capybara-envjs gem:
+  gem install capybara-envjs
+More info about the driver and env.js are available through the links above. The envjs gem only supports
+Ruby 1.8.7 at this time.
+
 == The DSL
 
 Capybara's DSL is inspired by Webrat. While backwards compatibility is retained
@@ -140,6 +151,10 @@ You can use the <tt>visit</tt> method to navigate to other pages:
 
 The visit method only takes a single parameter, the request method is *always*
 GET.
+
+You can get the current path of the browsing session for test assertions:
+
+    current_path.should == post_comments_path(post)
 
 === Clicking links and buttons
 
@@ -196,6 +211,17 @@ specific table, identified by either id or text of the table's caption tag.
       fill_in 'Name', :with => 'Jimmy'
     end
 
+You can also specify a scope to be used for future searches with the <tt>scope_to</tt>.
+It returns a handle to the session scoped to the provided selector.
+
+    scope = page.scope_to("//div[@id='foo']")
+    scope.has_xpath("//a[@class='bar']")
+
+You can also chain scopes by calling <tt>scope_to</tt> on an existing scope.
+
+    more_scope = scope.scope_to("//p")
+    more_scope.has_xpath("//a[@class='baz']")
+
 === Querying
 
 Capybara has a rich set of options for querying the page for the existence of
@@ -228,7 +254,12 @@ You can also find specific elements, in order to manipulate them:
 
 === Scripting
 
-In drivers which support it, you can easily evaluate JavaScript:
+In drivers which support it, you can easily execute JavaScript:
+
+    page.execute_script("$('body').empty()")
+
+For simple expressions, you can return the result of the script. Note
+that this may break with more complicated expressions:
 
     result = page.evaluate_script('4 + 4');
 

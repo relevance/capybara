@@ -26,6 +26,13 @@ class Capybara::Driver::RackTest < Capybara::Driver::Base
       end
     end
 
+    def value
+      if tag_name == 'textarea'
+        node.content
+      else
+        super
+      end
+    end
 
     def set(value)
       if tag_name == 'input' and type == 'radio'
@@ -112,7 +119,7 @@ class Capybara::Driver::RackTest < Capybara::Driver::Base
     def params(button)
       params = {}
 
-      node.xpath(".//input[not(@disabled) and @type!='radio' and @type!='checkbox' and @type!='submit']").map do |input|
+      node.xpath(".//input[not(@type) or (not(@disabled) and @type!='radio' and @type!='checkbox' and @type!='submit' and @type!='image')]").map do |input|
         merge_param!(params, input['name'].to_s, input['value'].to_s)
       end
       node.xpath(".//textarea[not(@disabled)]").map do |textarea|
@@ -192,7 +199,7 @@ class Capybara::Driver::RackTest < Capybara::Driver::Base
   end
 
   def process(method, path, attributes = {})
-    return if path.gsub(/^#{current_path}/, '') =~ /^#/
+    return if path.gsub(/^#{request_path}/, '') =~ /^#/
     send(method, path, attributes, env)
     follow_redirects!
   end
@@ -205,8 +212,12 @@ class Capybara::Driver::RackTest < Capybara::Driver::Base
     response.headers
   end
 
+  def status_code
+    response.status
+  end
+
   def submit(method, path, attributes)
-    path = current_path if not path or path.empty?
+    path = request_path if not path or path.empty?
     send(method, path, attributes, env)
     follow_redirects!
   end
@@ -214,21 +225,32 @@ class Capybara::Driver::RackTest < Capybara::Driver::Base
   def find(selector)
     html.xpath(selector).map { |node| Node.new(self, node) }
   end
-  
+
   def body
     @body ||= response.body
   end
-  
+
   def html
     @html ||= Nokogiri::HTML(body)
   end
   alias_method :source, :body
 
+  def cleanup!
+    clear_cookies
+  end
+
   def get(*args, &block); reset_cache; super; end
   def post(*args, &block); reset_cache; super; end
   def put(*args, &block); reset_cache; super; end
   def delete(*args, &block); reset_cache; super; end
-  
+
+  def follow_redirects!
+    5.times do
+      follow_redirect! if response.redirect?
+    end
+    raise Capybara::InfiniteRedirectError, "redirected more than 5 times, check for infinite redirects." if response.redirect?
+  end
+
 private
 
   def reset_cache
@@ -240,18 +262,8 @@ private
     Rack::MockSession.new(app, Capybara.default_host || "www.example.com")
   end
 
-  def current_path
+  def request_path
     request.path rescue ""
-  end
-
-  def follow_redirects!
-    Capybara::WaitUntil.timeout(4) do
-      redirect = response.redirect?
-      follow_redirect! if redirect
-      not redirect
-    end
-  rescue Capybara::TimeoutError
-    raise Capybara::InfiniteRedirectError, "infinite redirect detected!"
   end
 
   def env
@@ -262,11 +274,6 @@ private
       # no request yet
     end
     env
-  end
-
-  def reset_cache
-    @body = nil
-    @html = nil
   end
 
 end

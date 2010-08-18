@@ -216,6 +216,12 @@ shared_examples_for "click_button" do
       @results = extract_results(@session)
       @results['no_value'].should_not be_nil
     end
+    
+    it "should not send image buttons that were not clicked" do
+      @session.click_button('Click me!')
+      @results = extract_results(@session)
+      @results['okay'].should be_nil
+    end
 
     it "should serialize and send GET forms" do
       @session.visit('/form')
@@ -227,6 +233,7 @@ shared_examples_for "click_button" do
 
     it "should follow redirects" do
       @session.click_button('Go FAR')
+      @session.current_url.should match(%r{/landed$})
       @session.body.should include('You landed')
     end
 

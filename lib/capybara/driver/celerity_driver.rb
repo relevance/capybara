@@ -72,7 +72,7 @@ class Capybara::Driver::Celerity < Capybara::Driver::Base
     def path
       node.xpath
     end
-    
+
     def trigger(event)
       node.fire_event(event.to_s)
     end
@@ -102,7 +102,7 @@ class Capybara::Driver::Celerity < Capybara::Driver::Base
   def current_url
     browser.url
   end
-  
+
   def source
     browser.html
   end
@@ -115,11 +115,20 @@ class Capybara::Driver::Celerity < Capybara::Driver::Base
     browser.response_headers
   end
 
+  def status_code
+    browser.status_code
+  end
+
   def find(selector)
     browser.elements_by_xpath(selector).map { |node| Node.new(self, node) }
   end
 
   def wait?; true; end
+
+  def execute_script(script)
+    browser.execute_script script
+    nil
+  end
 
   def evaluate_script(script)
     browser.execute_script "#{script}"
@@ -132,6 +141,10 @@ class Capybara::Driver::Celerity < Capybara::Driver::Base
     end
 
     @_browser
+  end
+
+  def cleanup!
+    browser.clear_cookies
   end
 
 private
